@@ -17,6 +17,8 @@ contract Bank {
     uint pool3;
     uint totalStaked;
     uint stakers;
+    uint pool1Stakers;
+    uint pool2Stakers;
     uint pool3Stakers;
 
     mapping(address => uint) public balances;
@@ -27,6 +29,10 @@ contract Bank {
         daiToken = _daiToken;
         deployTime = block.timestamp;
         rewardTime = 3 days;
+        stakers = 0;
+        pool1Stakers = 0;
+        pool2Stakers = 0;
+        pool3Stakers = 0;
         
     }
 
@@ -46,55 +52,53 @@ contract Bank {
         totalStaked = totalStaked + _amount;
         stakers ++;
     }
-
+    
     function unStakeTokens() public {
-        require(block.timestamp > rewardTime * 2 + deployTime);
+        require(block.timestamp >= rewardTime * 2 + deployTime, 'not yet time to unstake');
         require(balances[msg.sender] > 0, 'balances need to be more than 0');
-        //days pool 6
+        
         if (block.timestamp > rewardTime * 2 + deployTime ) {
             uint _earnedReward = balances[msg.sender] * pool1 / totalStaked;
             daiToken.transfer(msg.sender, balances[msg.sender] + _earnedReward);
-            console.log('reward at pool 1 %s', _earnedReward );
             if(block.timestamp < rewardTime * 3 + deployTime){
-                stakers --; 
-            } else {
-                stakers = stakers;
+                pool1Stakers ++; 
+                pool2Stakers ++;
             }
         } 
-         console.log('stakers %s at end of pool 1', stakers);
-        //9 days
+        
         if(block.timestamp > rewardTime * 3 + deployTime ){
-             console.log('stakers at of pool 2  %s', stakers);
-            if(stakers > 1) {
+            uint _alonePool2 = stakers - pool1Stakers;
+            if(pool1Stakers == 0 || _alonePool2 > 1) {
                 uint _earnedRewardP2 = balances[msg.sender] * pool2 / totalStaked;
                 daiToken.transfer(msg.sender, _earnedRewardP2);
-                console.log('reward at pool 2 not alone %s', _earnedRewardP2);
-                
-            } else {
+            } 
+            if (_alonePool2 == 1){
                 uint _earnedRewardP2 = pool2;
                 daiToken.transfer(msg.sender, _earnedRewardP2);
-                console.log('reward at pool 2 alone %s', _earnedRewardP2);
+            }
+
+            if(block.timestamp < rewardTime * 4 + deployTime){
+                pool2Stakers ++; 
             }
         }
-        
-          console.log('pool3 stakers %s', stakers);
-
-          //12 days
 
        
         if (block.timestamp > rewardTime * 4 + deployTime) {
-            console.log('stakers %s at pool 3', stakers);
-            if(stakers > 1){
+            uint _alonePool3 = stakers - pool2Stakers;
+            if(pool2Stakers == 0 || _alonePool3 > 1){
                 uint _earnedRewardP3 = balances[msg.sender] * pool3 / totalStaked;
-                console.log('reward at pool 3 not alone %s', _earnedRewardP3);
                 daiToken.transfer(msg.sender, _earnedRewardP3 );
-
-             
-            } else {
+            } 
+            
+            if(_alonePool3 == 1) {
                 uint _earnedRewardP3 = pool3;
-                console.log('reward at pool 3 alone %s', _earnedRewardP3);
                 daiToken.transfer(msg.sender, _earnedRewardP3);
+            } 
+
+            if(block.timestamp > rewardTime * 4 + deployTime){
+                pool3Stakers++;
             }
+
         }
          balances[msg.sender] =  balances[msg.sender] - balances[msg.sender];
          
@@ -102,10 +106,12 @@ contract Bank {
     }
 
     function withdrawByBank() public {
-        require(msg.sender == admin);
+        uint _amount = daiToken.balanceOf(address(this));
+        require(block.timestamp > rewardTime * 4 + deployTime, 'not yet time to withdraw');
+        require(msg.sender == admin, 'you are not admin');
         require(daiToken.balanceOf(address(this)) != 0, 'sorry contract is empty');
-        if(stakers == 0 && block.timestamp > rewardTime * 4 + deployTime){
-            daiToken.transfer(admin, daiToken.balanceOf(address(this)));
+        if( pool3Stakers == 0){
+            daiToken.transfer(admin, _amount);
         }
     }
 
