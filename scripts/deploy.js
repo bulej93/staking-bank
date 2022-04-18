@@ -9,10 +9,10 @@ async function main() {
   console.log("dai token deployed to:", dai.address);
 
 
-  const EthPool = await hre.ethers.getContractFactory("EthPool");
-  const ethpool = await EthPool.deploy(dai.address);
-  await ethpool.deployed()
-  console.log("ethpool deployed to:", ethpool.address);
+  const Bank = await hre.ethers.getContractFactory("Bank");
+  const bank = await Bank.deploy(dai.address);
+  await bank.deployed()
+  console.log("bank deployed to:", bank.address);
 }
 
 
